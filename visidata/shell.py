@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass # pwd,grp modules not available on Windows
 
-from visidata import Column, Sheet, LazyComputeRow, asynccache, BaseSheet, vd
+from visidata import Column, Sheet, LazyComputeRow, asynccache, BaseSheet, vd, GuideSheet
 from visidata import Path, ENTER, asyncthread, VisiData
 from visidata import modtime, filesize, vstat, Progress, TextSheet
 from visidata.type_date import date
@@ -245,6 +245,42 @@ def inputShell(vd):
         vd.warning('no $column in command')
     return cmd
 
+class DirGuide(GuideSheet):
+    sheettype=DirSheet
+    guide_text = '''# Directory Sheet
+
+The **DirSheet** is a display of files and folders in the *source* directory.
+
+To load a **DirSheet** via the CLI, provide VisiData a directory as input (e.g. `vd sample_data/`). Within VisiData, use the command `open-dir-current` (equivalent to `vd .`).
+Passing the flag `-r` (`--recursive`) will additionally display all of the files in all subfolders (`vd -r .`).
+
+Basic usage of the **DirSheet** is to find and load files within VisiData:
+
+- {help.commands.open_row_file}
+- {help.commands.open_rows}
+- (`open-dir-parent`) to open parent directory
+- {help.commands.sysopen_row}
+
+Advanced usage of **DirSheet** is as a file systems manager.
+
+Via the **DirSheet** files can copied to a different directory, deleted, and renamed. All of the file metadata, except for *filetype*, is modifiable.
+Modifications on the **DirSheet** are deferred - they do not take effect on the filesystem itself until they are confirmed with `z Ctrl+S` (`commit-sheet`).
+
+- {help.commands.copy_row}
+- {help.commands.copy_selected}
+- `d` (`delete-row`) to delete file from filesystem
+- `e` (`edit-cell`) to change file metadata
+
+- `z Ctrl+S` (`commit-sheet`) to then commit all changes to the filesystem (not undoable!)
+
+## Options of Interest (must reload to take effect)
+
+- {help.options.dir_depth}
+    - [CLI] `-r` to include all files in all subfolders
+- {help.options.dir_hidden}
+'''
+
+
 DirSheet.addCommand('`', 'open-dir-parent', 'vd.push(openSource(source.parent if source.resolve()!=Path(".").resolve() else os.path.dirname(source.resolve())))', 'open parent directory')  #1801
 BaseSheet.addCommand('', 'open-dir-current', 'vd.push(vd.currentDirSheet)', 'open Directory Sheet: browse properties of files in current directory')
 
@@ -255,8 +291,8 @@ DirSheet.addCommand('g'+ENTER, 'open-rows', 'for r in selectedRows: vd.push(open
 DirSheet.addCommand('^O', 'sysopen-row', 'launchEditor(cursorRow)', 'open current file in external $EDITOR')
 DirSheet.addCommand('g^O', 'sysopen-rows', 'launchEditor(*selectedRows)', 'open selected files in external $EDITOR')
 
-DirSheet.addCommand('y', 'copy-row', 'copy_files([cursorRow], inputPath("copy to dest: "))', 'copy file to given directory')
-DirSheet.addCommand('gy', 'copy-selected', 'copy_files(selectedRows, inputPath("copy to dest: ", value=cursorRow.given))', 'copy selected files to given directory')
+DirSheet.addCommand('y', 'copy-row', 'copy_files([cursorRow], inputPath("copy to dest: "))', 'copy file to given directory *path*')
+DirSheet.addCommand('gy', 'copy-selected', 'copy_files(selectedRows, inputPath("copy to dest: ", value=cursorRow.given))', 'copy selected files to given directory *path*')
 
 @DirSheet.api
 @asyncthread
@@ -283,3 +319,5 @@ vd.addGlobals({
 vd.addMenuItems('''
     Column > Add column > shell > addcol-shell
 ''')
+
+vd.addGuide('DirSheet', DirGuide)
